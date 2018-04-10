@@ -1,0 +1,73 @@
+%% find auROC at each time point for each neuron
+zs = 15;
+
+for j = 1:size(neuron.C_raw,1)
+    for i = 1:(1500-2*zs)
+        zone1 = [i:i+zs];
+        zone2 = [i+zs+1:i+2*zs];
+        neu = neuron.C_raw(j,:);
+        neuronROC(i,j) = mayaauroc(neu, zone1, zone2);
+    end
+end
+
+%% plot auROC over time with rewarded head entries
+
+figure; plot(neuronROC(:,1), 'k'); title('auROC over time with rewarded head entries(r)'); hold on;
+for h = 1:size(z.rewarded_entries{3},1)
+    plot([z.rewarded_entries{3}(h,1),z.rewarded_entries{3}(h,1)],[0,1.0], '--r','linewidth',0.8);
+end
+
+%% distribution of time between dipper presentation and rewarded head entry
+
+for i = 1:size(z.rewarded_entries{3},1)
+    hd_int(i) = z.rewarded_entries{3}(i)-z.dip_present{3}(i);
+end
+
+%% convert all auROC points below 0.5 to the same distance above 0.5 (all troughs become peaks)
+
+for i = 1:size(neuronROC,2)
+    neu_abs(:,i) = abs(0.5-neuronROC(:,i))+0.5;
+end
+%% find local maxima in auROC after each rewarded head entry
+
+for j = 1:size(neuronROC,2)
+    for i = 1:size(z.rewarded_entries{3},1)
+        [peakheightr(i,j),peaklocr(i,j)] = findpeaks(neu_abs(z.rewarded_entries{3}(i):z.rewarded_entries{3}(i)+20,j), 'NPeaks', 1);
+    end
+end
+
+figure; subplot(2,1,1); histogram(peaklocr); title('all t* rewarded entries');
+subplot(2,1,2); histogram(peaklocr(peakheightr>0.8)); title('t* for peaks greater than 0.8');
+
+%% find local maxima in auROC after each dipper presentation
+
+for j = 1:size(neuronROC,2)
+    for i = 1:size(z.dip_present{3},1)
+        [peakheightd(i,j),peaklocd(i,j)] = findpeaks(neu_abs(z.dip_present{3}(i):end,j), 'NPeaks', 1);
+    end
+end
+
+figure; subplot(2,1,1); histogram(peaklocd); title('all t* dipper presentations');
+subplot(2,1,2); histogram(peaklocd(peakheightd>0.8)); title('t* for peaks greater than 0.8');
+
+%% find local maxima in auROC after each unrewarded head entry
+
+for j = 1:size(neuronROC,2)
+    for i = 1:size(z.unrewarded_entries{3},1)
+        [peakheightu(i,j),peaklocu(i,j)] = findpeaks(neu_abs(z.unrewarded_entries{3}(i):end,j), 'NPeaks', 1);
+    end
+end
+
+figure; subplot(2,1,1); histogram(peaklocu); title('all t* unrewarded entries');
+subplot(2,1,2); histogram(peaklocu(peakheightu>0.8)); title('t* for peaks greater than 0.8');
+
+%% find local maxima in auROC after each lever press
+
+for j = 1:size(neuronROC,2)
+    for i = 1:size(z.rlev_press{3},1)
+        [peakheightp(i,j),peaklocp(i,j)] = findpeaks(neu_abs(z.rlev_press{3}(i):end,j), 'NPeaks', 1);
+    end
+end
+
+figure; subplot(2,1,1); histogram(peaklocp); title('all t* lever presses');
+subplot(2,1,2); histogram(peaklocp(peakheightp>0.8)); title('t* for peaks greater than 0.8');
